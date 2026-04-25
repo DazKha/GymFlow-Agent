@@ -1,0 +1,13 @@
+langchain-core
+langchain-openai
+langchain-gradient
+langgraph
+pydantic
+python-dotenv
+requests
+# Policy RAG (query_gym_policy)
+langchain-community
+langchain-huggingface
+chromadb
+sentence-transformers
+torch
