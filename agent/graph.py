@@ -11,6 +11,7 @@ from agent.nodes import(
     policy_agent_node,
     booking_agent_node,
 )
+from guardrails.output_guard import output_guard_node
 from tools import (
     search_packages,
     get_package_detail,
@@ -25,13 +26,14 @@ def route_after_guard(state: AgentState) -> str:
     return "safe" if state.get("safe") else "unsafe"
 
 def route_intent(state: AgentState) -> str:
-    # Optional finer FSM: collecting / confirming (if agent ever sets them)
     stage = (state.get("booking_stage") or "").lower()
     if stage in {"collecting", "confirming"}:
         return "booking"
 
     intent = state.get("intent", "consult")
-    return "consult" if intent == "off_topic" else intent
+    if intent == "off_topic":
+        return "off_topic"
+    return intent
 
 
 def route_after_tools(state: AgentState) -> str:
@@ -49,6 +51,7 @@ builder.add_node("router", router_node)
 builder.add_node("consult_agent", consult_agent_node)
 builder.add_node("policy_agent", policy_agent_node)
 builder.add_node("booking_agent", booking_agent_node)
+builder.add_node("output_guard", output_guard_node)
 builder.add_node(
     "tools",
     ToolNode(
@@ -65,31 +68,38 @@ builder.add_node(
     ),
 )
 
-# Temporarily bypass guardrail for smoother conversational testing.
-builder.set_entry_point("router")
+builder.set_entry_point("input_guard")
+
+builder.add_conditional_edges("input_guard", route_after_guard, {
+    "safe": "router",
+    "unsafe": "output_guard",
+})
 
 builder.add_conditional_edges("router", route_intent, {
     "consult": "consult_agent",
     "policy": "policy_agent",
     "booking": "booking_agent",
+    "off_topic": "output_guard",
 })
 
 builder.add_conditional_edges("consult_agent", tools_condition, {
     "tools": "tools",
-    "__end__": END,
+    "__end__": "output_guard",
 })
 builder.add_conditional_edges("policy_agent", tools_condition, {
     "tools": "tools",
-    "__end__": END,
+    "__end__": "output_guard",
 })
 builder.add_conditional_edges("booking_agent", tools_condition, {
     "tools": "tools",
-    "__end__": END,
+    "__end__": "output_guard",
 })
 builder.add_conditional_edges("tools", route_after_tools, {
     "consult": "consult_agent",
     "policy": "policy_agent",
     "booking": "booking_agent",
 })
+
+builder.add_edge("output_guard", END)
 
 graph = builder.compile()
