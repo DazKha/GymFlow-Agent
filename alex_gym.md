@@ -151,13 +151,9 @@ Query → Dense Retrieve → Answer
 
 ### Required env vars:
 ```bash
-# Agent LLM
-LLM_API_KEY=...
-MODEL_NAME=deepseek-v4-flash
-OPENAI_BASE_URL=
-
-# Policy answer provider
+# Agent and policy LLM credentials
 DIGITALOCEAN_INFERENCE_KEY=...  # hoặc GRADIENT_MODEL_ACCESS_KEY
+MODEL_NAME=openai-gpt-4o
 LLM_MODEL=openai-gpt-4o-mini
 
 # Backend (mock)

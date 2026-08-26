@@ -7,7 +7,8 @@ FastAPI mock server cho chatbot tư vấn gói tập gym, dùng SQLite + SQLAlch
 Yêu cầu: Python 3.9+
 
 ```bash
-cd /Users/minhkha/SidePrj/gym-agent/backend
+# Run this from the repository root.
+cd backend
 python -m venv .venv
 source .venv/bin/activate
 pip install -r backend/requirements.txt
