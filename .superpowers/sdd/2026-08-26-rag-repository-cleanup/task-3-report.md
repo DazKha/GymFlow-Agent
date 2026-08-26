@@ -59,3 +59,44 @@
 
 - The repository's `tools/__init__.py` currently imports missing `tools.get_booking`, so importing the tool through the package fails before reaching `query_gym_policy`; fixing that unrelated issue was intentionally out of scope.
 - `rag/core/ingest.py` was reconstructed from the last committed `rag/ingest_policies.py` because Task 2 had already removed the source file; its vector-store dependency remains lazy so `--help` stays offline.
+
+## Review Fix Report
+
+### Fixes
+
+- Removed stale `tools.get_booking`, `tools.get_facilities`, and `tools.get_slots` imports and exports from `tools/__init__.py`; all tool modules that exist in the checkout remain exported, including `query_gym_policy`.
+- Added regression coverage that executes `import tools.query_gym_policy` in a subprocess.
+- Added explicit tests for LLM construction and invocation failures. Both assert the safe fallback, no provider detail leakage, and the logged exception's chained cause.
+- Removed all tracked `__pycache__`/`.pyc` files and the tracked `data/policy-terms-db` Chroma database. Source, policy, evaluation, and test files were not removed.
+
+### Verification Commands
+
+1. `python -m pytest -q rag/core/tests/test_pipeline.py` before the package fix
+   - Exit status: `1`.
+   - Output: `1 failed, 6 passed`; the import regression reproduced `ModuleNotFoundError: No module named 'tools.get_booking'`.
+
+2. `python -m pytest -q rag/core/tests`
+   - Exit status: `0`.
+   - Output: `62 passed in 3.49s`.
+
+3. `python -c "import tools.query_gym_policy"`
+   - Exit status: `0`.
+   - Output: no output.
+
+4. `python -m pytest -q rag/core/tests/test_pipeline.py -k 'llm or tools_package'`
+   - Exit status: `0`.
+   - Output: `4 passed, 3 deselected in 0.57s`.
+
+5. `git ls-files | awk '/(__pycache__\\/|\\.pyc$|^data\\/policy-terms-db\\/|^data\\/generated\\/|\\.sqlite3$)/ {print}'`
+   - Exit status: `0`.
+   - Output: no output; no tracked Python caches, local Chroma/database files, or generated paths matched.
+
+6. `git diff --check`
+   - Exit status: `0`.
+   - Output: no whitespace errors.
+
+### Fix Self-Review And Concerns
+
+- The package initializer now reflects the actual tool module set and does not fabricate replacements for missing tools.
+- Failure tests exercise both failure points promised by the pipeline boundary and verify that sensitive exception text is absent from tool-facing output.
+- Running tests regenerates ignored local `__pycache__` files, but the tracked-artifact verification remains empty.

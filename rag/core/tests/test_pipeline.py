@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import subprocess
+import sys
 from types import SimpleNamespace
 
 import pytest
@@ -90,3 +92,54 @@ def test_provider_failure_returns_safe_message_with_chained_cause(
 
     assert message == "Không thể tra cứu chính sách lúc này."
     assert "secret-provider-token" not in message
+
+
+def test_llm_construction_failure_is_safe_and_chained(
+    monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture
+) -> None:
+    failure = RuntimeError("provider-key=secret-provider-token")
+
+    monkeypatch.setattr(pipeline, "PolicyRetriever", lambda: SimpleNamespace(
+        search=lambda query, top_k: [_result()]
+    ))
+    monkeypatch.setattr(pipeline, "_get_llm", lambda: (_ for _ in ()).throw(failure))
+
+    message = pipeline.run_policy_rag("refunds")
+
+    assert message == "Không thể tra cứu chính sách lúc này."
+    assert "secret-provider-token" not in message
+    logged = caplog.records[-1].exc_info[1]
+    assert logged.__cause__ is failure
+
+
+def test_llm_invocation_failure_is_safe_and_chained(
+    monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture
+) -> None:
+    failure = RuntimeError("provider-response=secret-provider-token")
+
+    class FailingLLM:
+        def invoke(self, prompt: str) -> SimpleNamespace:
+            raise failure
+
+    monkeypatch.setattr(pipeline, "PolicyRetriever", lambda: SimpleNamespace(
+        search=lambda query, top_k: [_result()]
+    ))
+    monkeypatch.setattr(pipeline, "_get_llm", lambda: FailingLLM())
+
+    message = pipeline.run_policy_rag("refunds")
+
+    assert message == "Không thể tra cứu chính sách lúc này."
+    assert "secret-provider-token" not in message
+    logged = caplog.records[-1].exc_info[1]
+    assert logged.__cause__ is failure
+
+
+def test_tools_package_imports_query_policy_tool() -> None:
+    result = subprocess.run(
+        [sys.executable, "-c", "import tools.query_gym_policy"],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+
+    assert result.returncode == 0, result.stderr
