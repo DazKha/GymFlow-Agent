@@ -1,16 +1,25 @@
+# Python and local framework state
+__pycache__/
+*.py[cod]
 .langgraph_api/
 .env
-agent.md
-agent_chat_simulation.ipynb
-test_tool.ipynb
 
-data/gym-policy-terms.md
+# Local databases and vector-store persistence
+*.db
+*.sqlite
+*.sqlite3
+**/chroma/
+**/chroma_db/
+**/*-db/
+data/generated/
 
-tools/get_facilities.py
-tools/search_facilities.py
-tools/search_facilities_semantic.py
-tools/get_booking.py
-tools/get_slots.py
+# Experiment outputs and model caches
+**/runs/
+**/experiment_runs/
+.cache/
+.huggingface/
+model_cache/
+transformers_cache/
 
-cursor-prompt-backend.md
-gym_membership_mock_data-1.md
+# Notebook state
+.ipynb_checkpoints/
