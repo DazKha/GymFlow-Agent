@@ -89,6 +89,25 @@ class TestVectorStore:
         assert result2["errors"] == 0
         assert fake_store.count() == 2
 
+    def test_reingest_updates_changed_chunk_without_duplicating_unchanged_chunk(self, fake_store):
+        fake_store.ingest(SAMPLE_CHUNKS)
+        changed = [dict(chunk) for chunk in SAMPLE_CHUNKS]
+        changed[0]["content"] = "Updated payment instructions."
+        changed[0]["embedding_text"] = "Updated payment instructions."
+        changed[0]["content_hash"] = "new-content-hash"
+
+        result = fake_store.ingest(changed)
+
+        assert result["inserted"] == 0
+        assert result["updated"] == 1
+        assert result["unchanged"] == 1
+        assert result["errors"] == 0
+        assert fake_store.count() == 2
+        stored = fake_store.search("Updated payment instructions.", top_k=2)
+        updated = next(item for item in stored if item["id"] == changed[0]["chunk_id"])
+        assert updated["document"] == "Updated payment instructions."
+        assert updated["metadata"]["content_hash"] == "new-content-hash"
+
     def test_missing_metadata_rejected(self):
         embed = FakeEmbeddingProvider()
         with tempfile.TemporaryDirectory() as tmpdir:

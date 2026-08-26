@@ -146,7 +146,7 @@ def main() -> None:
         args.device,
         args.recreate_collection,
         args.sync,
-    ).get("status") == "failed":
+    ).get("status") != "ok":
         sys.exit(1)
 
 

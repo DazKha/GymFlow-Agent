@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import sys
 from pathlib import Path
 from typing import Callable, Iterable
 
@@ -17,15 +18,31 @@ def select_result_paths(paths: Iterable[str] | None = None) -> tuple[Path, ...]:
     return tuple(Path(path) for path in (DEFAULT_RESULT_PATHS if paths is None else paths))
 
 
+class _InjectedEvaluationDataset:
+    def __init__(self, samples: list[dict]) -> None:
+        self.samples = samples
+
+    def to_list(self) -> list[dict]:
+        return list(self.samples)
+
+
 def run_ragas_validation(paths: Iterable[str] | None = None, evaluator: Callable | None = None):
     """Run Ragas only for the selected files; importing Ragas is deliberately lazy."""
     selected = select_result_paths(paths)
-    rows = [json.loads(line) for path in selected for line in path.read_text(encoding="utf-8").splitlines() if line.strip()]
+    missing = [path for path in selected if not path.is_file()]
+    if missing:
+        raise ValueError("result file(s) not found: " + ", ".join(str(path) for path in missing))
+    rows = [
+        json.loads(line)
+        for path in selected
+        for line in path.read_text(encoding="utf-8").splitlines()
+        if line.strip()
+    ]
+    if evaluator is not None:
+        return evaluator(_InjectedEvaluationDataset(rows))
     from ragas.dataset_schema import EvaluationDataset  # noqa: PLC0415
 
     dataset = EvaluationDataset.from_list(rows) if rows else EvaluationDataset(samples=[])
-    if evaluator is not None:
-        return evaluator(dataset)
     from ragas import evaluate  # noqa: PLC0415
 
     return evaluate(dataset)
@@ -46,7 +63,21 @@ def main() -> None:
         for path in selected:
             print(path)
         return
-    run_ragas_validation(selected)
+    missing = [path for path in selected if not path.is_file()]
+    if missing and supplied_paths:
+        parser.error("result file(s) not found: " + ", ".join(str(path) for path in missing))
+    if missing:
+        print(
+            "Missing default result file(s): " + ", ".join(str(path) for path in missing),
+            file=sys.stderr,
+        )
+        selected = tuple(path for path in selected if path.is_file())
+        if not selected:
+            parser.error("no default result files found; run an evaluation first")
+    try:
+        run_ragas_validation(selected)
+    except ValueError as error:
+        parser.error(str(error))
 
 
 if __name__ == "__main__":

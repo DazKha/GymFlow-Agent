@@ -163,12 +163,20 @@ class PolicyVectorStore:
         collection = self._get_or_create_collection()
         result = {"inserted": 0, "updated": 0, "unchanged": 0, "errors": 0}
 
-        # Build lookup of existing IDs
-        existing_ids = set()
+        # Load the fields needed to distinguish a true no-op from an update.
+        existing_records = {}
         try:
-            existing = collection.get()
+            existing = collection.get(include=["documents", "metadatas", "embeddings"])
             if existing and existing.get("ids"):
-                existing_ids = set(existing["ids"])
+                existing_records = {
+                    chunk_id: (document, metadata or {}, embedding)
+                    for chunk_id, document, metadata, embedding in zip(
+                        existing["ids"],
+                        existing.get("documents") or [],
+                        existing.get("metadatas") or [],
+                        existing.get("embeddings") or [],
+                    )
+                }
         except Exception:
             pass
 
@@ -207,21 +215,45 @@ class PolicyVectorStore:
 
             embeddings = self._embed.embed_documents(texts_to_embed)
 
+            inserts = []
+            insert_indexes = []
+            updates = []
+            update_indexes = []
             for j, chunk_id in enumerate(ids):
-                if chunk_id in existing_ids:
+                existing_record = existing_records.get(chunk_id)
+                if existing_record is None:
+                    inserts.append(chunk_id)
+                    insert_indexes.append(j)
+                elif (
+                    existing_record[0] == documents[j]
+                    and existing_record[1].get("content_hash", "") == metadatas[j]["content_hash"]
+                    and existing_record[1].get("embedding_model", "") == metadatas[j]["embedding_model"]
+                    and list(existing_record[2] or []) == list(embeddings[j])
+                ):
                     result["unchanged"] += 1
                 else:
-                    result["inserted"] += 1
+                    updates.append(chunk_id)
+                    update_indexes.append(j)
 
             try:
-                collection.add(
-                    ids=ids,
-                    embeddings=embeddings,
-                    documents=documents,
-                    metadatas=metadatas,
-                )
+                if inserts:
+                    result["inserted"] += len(inserts)
+                    collection.add(
+                        ids=inserts,
+                        embeddings=[embeddings[j] for j in insert_indexes],
+                        documents=[documents[j] for j in insert_indexes],
+                        metadatas=[metadatas[j] for j in insert_indexes],
+                    )
+                if updates:
+                    result["updated"] += len(updates)
+                    collection.upsert(
+                        ids=updates,
+                        embeddings=[embeddings[j] for j in update_indexes],
+                        documents=[documents[j] for j in update_indexes],
+                        metadatas=[metadatas[j] for j in update_indexes],
+                    )
             except Exception as e:
-                result["errors"] += len(ids)
+                result["errors"] += len(inserts) + len(updates)
                 continue
 
         return result
