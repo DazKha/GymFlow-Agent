@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from langchain_core.tools import tool
 
-from rag.policy_pipeline import run_policy_rag
+from rag.core.pipeline import run_policy_rag
 
 
 @tool
