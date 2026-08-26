@@ -29,9 +29,12 @@ class RetrievalConfig:
 
 def experiment_configs() -> tuple[RetrievalConfig, ...]:
     """Return the dense, reranker, multi-query, and combined variants."""
-    return (
+    configs = (
         RetrievalConfig(name="dense"),
         RetrievalConfig(name="reranker", reranker_enabled=True),
         RetrievalConfig(name="multi_query", multi_query_enabled=True),
         RetrievalConfig(name="combined", multi_query_enabled=True, reranker_enabled=True),
     )
+    for config in configs:
+        config.validate()
+    return configs
