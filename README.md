@@ -1,71 +1,99 @@
-# Alex — trợ lý FlexFit Gym
+# Alex, FlexFit Gym policy agent
 
-**Alex** là trợ lý ảo tư vấn trực tuyến cho **FlexFit Gym**, một trung tâm thể hình (mô tả demo) với tiện ích như hồ bơi, sauna, lớp nhóm, PT, v.v. Alex hỗ trợ khách bằng **tiếng Việt**: tìm gói tập phù hợp, trả lời thắc mắc về chính sách/điều khoản, và hướng dẫn **đặt lịch tập thử** — ưu tiên thông tin **có nguồn** (API, RAG) thay vì tự bịa.
+Alex is a Vietnamese LangGraph agent for gym-plan advice, policy questions, and
+trial-session booking. Policy answers use the dense production RAG path and
+return citations from the indexed policy documents.
 
-Dự án xây dạng **agent nhiều tác vụ** trên **LangGraph**, tách đồ thị theo **intent** (tư vấn / chính sách / đặt lịch) và dùng **công cụ (tools)** tương tác với backend HTTP và kho tài liệu nội bộ.
+## Architecture
 
----
+```text
+agent graph -> tools/query_gym_policy -> rag.core.pipeline
+                                      -> dense E5 retriever -> Chroma
 
-## Luồng hoạt động (tóm tắt)
-
-1. **Router** — phân loại `consult` | `policy` | `booking` dựa trên tin nhắn mới (có hỗ trợ ngữ cảnh hội thoại, trạng thái booking khi cần).
-2. **Consult** — tư vấn gói, giá, tiện ích; gọi tool tìm kiếm/ chi tiết gói, so sánh, tiện ích cơ sở.
-3. **Policy** — câu hỏi điều khoản, hoàn tiền, nội quy, camera, v.v.; gọi **RAG** qua `query_gym_policy`.
-4. **Booking** — thu thập thông tin, xác nhận, tạo lịch qua `create_booking`, có mốc thời gian Việt Nam qua `get_vietnam_now`.
-
-Sau bước gọi tool, **ToolNode** thực thi và đưa lại **đúng agent** tương ứng với `intent` hiện tại.
-
----
-
-## Công cụ (tools)
-
-Các tool được **đăng ký trong graph** (xem `agent/graph.py`) gồm:
-
-| Tool | Mục đích |
-|------|----------|
-| `search_packages` | Tìm gói tập theo bộ lọc (mô tả, ngân sách, nhu cầu). |
-| `get_package_detail` | Chi tiết một gói (giá, cam kết, tiện ích, v.v.). |
-| `compare_packages` | Lấy dữ liệu nhiều gói để so sánh. |
-| `get_facilities` | Thiết bị / khu vực theo loại. |
-| `get_vietnam_now` | Mốc thời gian hiện tại theo múi **Asia/Ho_Chi_Minh** (hỗ trợ suy "mai", "tối nay"…). |
-| `create_booking` | Tạo booking tập thử qua API (`POST /bookings`). |
-| `query_gym_policy` | Tra cứu chính sách/điều khoản từ **RAG** (Chroma + embedding + pipeline trong `rag/policy_pipeline.py`). |
-
-Gói `tools/` còn export thêm (vd. `get_booking`, `get_slots`) — có thể dùng mở rộng, hiện **chưa** gắn vào `ToolNode` mặc định.
-
-**Backend HTTP** — cấu hình qua `BACKEND_URL` / `BASE_URL` (mặc định `http://127.0.0.1:8000`), xem `tools/client.py`.
-
----
-
-## Công nghệ sử dụng
-
-- **LangGraph** — biểu đồ trạng thái, `ToolNode`, `tools_condition`, compile graph `gym_agent` (`langgraph.json`).
-- **LangChain Core** — tin nhắn, công cụ, `bind_tools`.
-- **ChatGradient (langchain-gradient)** — LLM suy luận (ví dụ `openai-gpt-4o`), khoá qua `DIGITALOCEAN_INFERENCE_KEY` / `GRADIENT_MODEL_ACCESS_KEY` (tùy môi trường).
-- **Pydantic / python-dotenv** — cấu hình, biến môi trường.
-- **RAG (policy)**: `langchain-community` (Chroma), `langchain-huggingface` (embeddings), `chromadb`, `sentence-transformers` (cross-encoder khi bật rerank), `torch` — vector store tại `data/policy-terms-db` (build từ `rag/build_db.ipynb`).
-- **HTTP**: `requests` tới API gym mock/thật.
-
----
-
-## Chạy & cấu hình (gợi ý nhanh)
-
-- Sao chép `.env` với khoá inference và (tuỳ chọn) `BACKEND_URL`.
-- Cài phụ thuộc: `pip install -r requirements.txt`
-- RAG: build DB nếu chưa có thư mục vector store; biến môi trường liên quan nằm trong `rag/policy_pipeline.py` (ví dụ `GYM_POLICY_CHROMA_DIR`, `GYM_POLICY_SKIP_RERANK`, …).
-- **LangGraph Studio / CLI**: `langgraph dev` (graph export `agent.graph:graph`).
-
----
-
-## Cấu trúc thư mục (rút gọn)
-
-```
-agent/          # graph, state, nodes (router, consult, policy, booking), prompts
-tools/          # client HTTP + definition @tool
-rag/            # pipeline RAG, notebook build / test
-data/           # tài liệu chính sách, vector store (có thể .gitignore)
+rag.research   optional benchmark variants
+rag.evaluation deterministic metrics and opt-in Ragas validation
 ```
 
----
+The agent imports only `rag.core`. Query expansion, reciprocal-rank fusion,
+cross-encoder reranking, benchmark runs, and Ragas are not part of normal
+startup. A clean runtime install therefore does not import Ragas.
 
-*FlexFit Gym và “Alex” trong repo là bối cảnh demo/đồ án; điều chỉnh thương hiệu hoặc API theo sản phẩm thực tế nếu triển khai ngoài môi trường thử nghiệm.*
+## Setup
+
+```bash
+cp .env.example .env
+python -m venv .venv
+source .venv/bin/activate
+python -m pip install -r requirements.txt
+```
+
+Set the inference key in `.env`. Set `BACKEND_URL` to the running gym API; when
+the companion backend is checked out, start it from that backend directory with
+`uvicorn backend.main:app --reload`.
+
+Start the agent with:
+
+```bash
+langgraph dev
+```
+
+## Policy Index
+
+Canonical Markdown sources live in `data/policies/`. The following workflow
+uses only repository-relative paths and keeps generated output ignored:
+
+```bash
+python scripts/normalize_policies.py
+python scripts/validate_policies.py
+python -m rag.core.chunking --input-dir data/policies \
+  --output data/generated/policy_chunks.jsonl \
+  --report data/generated/policy_chunk_report.json
+python -m rag.core.ingest --input data/generated/policy_chunks.jsonl --dry-run
+python -m rag.core.ingest --input data/generated/policy_chunks.jsonl \
+  --persist-dir data/generated/chroma --recreate-collection --sync
+```
+
+The production index uses multilingual E5 embeddings and dense cosine search
+only. Rebuild chunks and the index whenever a policy source changes.
+
+## Research And Evaluation
+
+Install optional dependencies only when needed:
+
+```bash
+python -m pip install -r requirements-research.txt
+python -m rag.research.benchmark --help
+python -m rag.evaluate_policy_rag --help
+```
+
+The research benchmark exposes `dense`, `reranker`, `multi_query`, and
+`combined` configurations. Ragas is intentionally selective: pass only the
+result files you want to validate, normally the dense baseline and the chosen
+best configuration.
+
+```bash
+python -m rag.evaluation.ragas_validation --list
+python -m rag.evaluation.ragas_validation \
+  --result-path path/to/dense.jsonl \
+  --result-path path/to/combined.jsonl
+```
+
+Ragas is imported lazily only by the execution path; listing or selecting files
+does not require it.
+
+## Checks
+
+```bash
+python -m pytest -q
+python -m pytest -q rag/core/tests rag/research/tests rag/evaluation/tests -m "not real_model"
+python scripts/normalize_policies.py --help
+python scripts/validate_policies.py --help
+python -m rag.core.chunking --help
+python -m rag.core.ingest --help
+python -m rag.research.benchmark --help
+python -m rag.evaluation.ragas_validation --help
+```
+
+The default tests are offline and do not download models or call external
+services. See `docs/rag/` for policy preparation notes and `docs/evaluation/`
+for benchmark and Ragas details.

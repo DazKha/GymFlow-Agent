@@ -396,7 +396,7 @@ class TestPipelineIntegration:
 # Real corpus tests
 # ---------------------------------------------------------------------------
 
-REAL_DATA_DIR = Path(__file__).resolve().parent / "fixtures"
+REAL_DATA_DIR = Path(__file__).resolve().parents[3] / "data" / "policies"
 POLICY_FILES = [
     "complaint-resolution-policy.md",
     "payment-policy.md",

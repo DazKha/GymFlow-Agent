@@ -2,7 +2,7 @@
 
 Usage:
     python -m rag.core.chunking \\
-      --input-dir data \\
+       --input-dir data/policies \\
       --output data/generated/policy_chunks.jsonl \\
       --report data/generated/policy_chunk_report.json \\
       --target-tokens 450 \\
