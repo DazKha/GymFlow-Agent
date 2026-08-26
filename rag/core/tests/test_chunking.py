@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import json
+import subprocess
+import sys
 import re
 import tempfile
 from pathlib import Path
@@ -160,6 +162,19 @@ Content here.
 
 
 class TestChunking:
+    def test_default_pipeline_does_not_load_huggingface(self, monkeypatch):
+        import transformers
+
+        calls = []
+
+        def fail_if_called(*args, **kwargs):
+            calls.append((args, kwargs))
+            raise AssertionError("default chunking must not load Hugging Face")
+
+        monkeypatch.setattr(transformers.AutoTokenizer, "from_pretrained", fail_if_called)
+        ChunkingPipeline()
+        assert calls == []
+
     def test_small_section_single_chunk(self):
         config = _make_config(target=450, max_tokens=600, overlap=50)
         pipeline = ChunkingPipeline(config=config)
@@ -320,6 +335,27 @@ class TestTokenCounting:
 
 
 class TestPipelineIntegration:
+    def test_cli_runs_without_model_download(self, tmp_path):
+        input_path = tmp_path / "sample.md"
+        input_path.write_text(SAMPLE_DOC, encoding="utf-8")
+        result = subprocess.run(
+            [
+                sys.executable,
+                "-m",
+                "rag.core.chunking",
+                "--input-dir",
+                str(tmp_path),
+                "--output",
+                str(tmp_path / "chunks.jsonl"),
+                "--report",
+                str(tmp_path / "report.json"),
+            ],
+            capture_output=True,
+            text=True,
+        )
+        assert result.returncode == 0, result.stderr
+        assert "Validation: PASSED" in result.stdout
+
     def test_pipeline_on_sample(self):
         config = _make_config()
         pipeline = ChunkingPipeline(config=config)
@@ -360,7 +396,7 @@ class TestPipelineIntegration:
 # Real corpus tests
 # ---------------------------------------------------------------------------
 
-REAL_DATA_DIR = Path(__file__).resolve().parents[3] / "data"
+REAL_DATA_DIR = Path(__file__).resolve().parent / "fixtures"
 POLICY_FILES = [
     "complaint-resolution-policy.md",
     "payment-policy.md",

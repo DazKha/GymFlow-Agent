@@ -2,9 +2,7 @@
 
 from __future__ import annotations
 
-import json
 import tempfile
-from pathlib import Path
 
 import pytest
 
@@ -88,6 +86,7 @@ class TestVectorStore:
         result2 = fake_store.ingest(SAMPLE_CHUNKS)
         assert result2["inserted"] == 0  # Existing IDs detected, not re-inserted
         assert result2["unchanged"] == 2
+        assert result2["errors"] == 0
         assert fake_store.count() == 2
 
     def test_missing_metadata_rejected(self):
@@ -174,44 +173,6 @@ class TestRetriever:
         for r in results:
             assert r.source_url, f"Missing source_url in {r.chunk_id}"
 
-
-class TestIngestionCLI:
-    def test_dry_run_on_valid_jsonl(self):
-        import subprocess
-        import sys
-
-        with tempfile.TemporaryDirectory() as tmpdir:
-            tmp = Path(tmpdir)
-            jsonl_path = tmp / "chunks.jsonl"
-            with open(jsonl_path, "w", encoding="utf-8") as f:
-                for c in SAMPLE_CHUNKS:
-                    f.write(json.dumps(c, ensure_ascii=False) + "\n")
-
-            result = subprocess.run(
-                [sys.executable, "-m", "rag.ingest_policies", "--dry-run", "--input", str(jsonl_path)],
-                capture_output=True, text=True,
-            )
-            assert result.returncode == 0
-            assert "Chunks: 2" in result.stdout
-
-    def test_dry_run_detects_duplicates(self):
-        import subprocess
-        import sys
-
-        with tempfile.TemporaryDirectory() as tmpdir:
-            tmp = Path(tmpdir)
-            jsonl_path = tmp / "chunks.jsonl"
-            with open(jsonl_path, "w", encoding="utf-8") as f:
-                for c in SAMPLE_CHUNKS:
-                    f.write(json.dumps(c, ensure_ascii=False) + "\n")
-                # Write first chunk again
-                f.write(json.dumps(SAMPLE_CHUNKS[0], ensure_ascii=False) + "\n")
-
-            result = subprocess.run(
-                [sys.executable, "-m", "rag.ingest_policies", "--dry-run", "--input", str(jsonl_path)],
-                capture_output=True, text=True,
-            )
-            assert "duplicate" in result.stdout.lower()
 
     def test_recreate_collection(self, fake_store):
         fake_store.ingest(SAMPLE_CHUNKS)

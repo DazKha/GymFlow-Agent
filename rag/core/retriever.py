@@ -4,8 +4,6 @@ from __future__ import annotations
 
 import json
 import os
-import time
-from pathlib import Path
 
 from pydantic import BaseModel
 
@@ -122,74 +120,6 @@ class PolicyRetriever:
         document_ids: list[str] | None = None,
     ) -> list[PolicySearchResult]:
         return self._search_dense(query, top_k, document_ids)
-
-    def search_with_trace(self, query: str, config=None, expander=None, reranker=None):
-        from rag.retrieval_config import RetrievalConfig
-        from rag.retrieval_fusion import fuse_ranked_results
-
-        config = config or RetrievalConfig()
-        config.validate()
-        total_started = time.perf_counter()
-        expansion_latency = 0.0
-        expansion_llm_latency = 0.0
-        expansion_cache_hit = False
-        expansion_calls = 0
-        expansion_error = ""
-        expansion_source_latency = 0.0
-        variants = [query]
-        if config.multi_query_enabled:
-            if expander is None:
-                from rag.query_expansion import LLMQueryExpander
-
-                expander = LLMQueryExpander(config.query_variant_count)
-            expansion = expander.expand(query)
-            variants = expansion.queries
-            expansion_latency = expansion.latency_ms
-            expansion_llm_latency = expansion.llm_latency_ms
-            expansion_source_latency = expansion.source_llm_latency_ms
-            expansion_cache_hit = expansion.cache_hit
-            expansion_calls = expansion.llm_calls
-
-        dense_started = time.perf_counter()
-        ranked_lists = [self._search_dense(variant, config.candidate_pool_size) for variant in variants]
-        dense_latency = (time.perf_counter() - dense_started) * 1000
-        for variant, ranked in zip(variants, ranked_lists):
-            for item in ranked:
-                item.query_variant = variant
-
-        fusion_started = time.perf_counter()
-        fused = fuse_ranked_results(ranked_lists, config.candidate_pool_size, config.rrf_k)
-        fusion_latency = (time.perf_counter() - fusion_started) * 1000
-        reranking_latency = 0.0
-        model_load_latency = 0.0
-        if config.reranker_enabled:
-            if reranker is None:
-                from rag.reranker import CrossEncoderReranker
-
-                reranker = CrossEncoderReranker(config.reranker_model_name, config.reranker_batch_size, config.reranker_device)
-            fused, rerank_trace = reranker.rerank(query, fused, config.final_top_k)
-            reranking_latency = rerank_trace.reranking_latency_ms
-            model_load_latency = rerank_trace.model_load_latency_ms
-
-        end_to_end = (time.perf_counter() - total_started) * 1000
-        trace = {
-            "query_variants": variants,
-            "expansion_latency_ms": expansion_latency,
-            "expansion_llm_latency_ms": expansion_llm_latency,
-            "expansion_cache_hit": expansion_cache_hit,
-            "expansion_llm_calls": expansion_calls,
-            "expansion_error": expansion_error,
-            "real_expansion_latency_ms": expansion_source_latency,
-            "dense_retrieval_latency_ms": dense_latency,
-            "fusion_latency_ms": fusion_latency,
-            "reranking_latency_ms": reranking_latency,
-            "model_load_latency_ms": model_load_latency,
-            "end_to_end_retrieval_latency_ms": end_to_end,
-            "estimated_production_latency_ms": end_to_end + (expansion_source_latency if expansion_cache_hit else 0.0),
-            "estimated_expansion_latency_ms": expansion_source_latency,
-            "candidate_pool_size": len(fused),
-        }
-        return fused, trace
 
     def search_to_ragas_format(
         self,

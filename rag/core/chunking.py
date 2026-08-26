@@ -211,31 +211,9 @@ class ChunkingPipeline:
 
     @staticmethod
     def _create_counter() -> TokenCounter:
-        try:
-            from transformers import AutoTokenizer
-
-            tok = AutoTokenizer.from_pretrained("intfloat/multilingual-e5-base")
-
-            class E5Counter:
-                def __init__(self, tokenizer):
-                    self._tok = tokenizer
-
-                def count(self, text: str) -> int:
-                    return len(self._tok.encode(text))
-
-                def encode(self, text: str) -> list[int]:
-                    return self._tok.encode(text)
-
-                def decode(self, tokens: list[int]) -> str:
-                    return self._tok.decode(tokens, skip_special_tokens=True)
-
-                @property
-                def name(self) -> str:
-                    return "intfloat/multilingual-e5-base"
-
-            return E5Counter(tok)
-        except Exception:
-            return TiktokenCounter(encoding="o200k_base")
+        # Keep the default path local; model tokenizers are optional for callers
+        # that need them and must never be loaded by normal chunking.
+        return TiktokenCounter(encoding="o200k_base")
 
     def _make_prefix(self, doc_title: str, section_path: list[str]) -> str:
         return _make_embedding_prefix(doc_title, section_path)
@@ -752,7 +730,7 @@ def main() -> None:
     args = parser.parse_args()
 
     config = ChunkingConfig(
-        tokenizer_name=pipeline._counter.name,
+        tokenizer_name="tiktoken:o200k_base",
         target_tokens=args.target_tokens,
         max_tokens=args.max_tokens,
         overlap_tokens=args.overlap_tokens,
