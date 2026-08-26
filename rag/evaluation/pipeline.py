@@ -20,13 +20,17 @@ def evaluate_retrieval(
     cases: Iterable[EvaluationCase | dict],
     retriever: object,
     configuration: RetrievalConfig,
+    expander: object | None = None,
+    reranker: object | None = None,
 ) -> EvaluationReport:
     """Evaluate one explicit retrieval configuration using an injected retriever."""
     configuration.validate()
     normalized = [_case(value) for value in cases]
     start = perf_counter()
     rankings = [
-        [result.chunk_id for result in run_variant(case.query, configuration, retriever=retriever)]
+        [result.chunk_id for result in run_variant(
+            case.query, configuration, retriever=retriever, expander=expander, reranker=reranker,
+        )]
         for case in normalized
     ]
     elapsed = (perf_counter() - start) * 1000
@@ -46,6 +50,9 @@ def evaluate_retrieval(
     )
 
 
-def compare_retrieval_variants(cases, retriever, configurations):
+def compare_retrieval_variants(cases, retriever, configurations, expander=None, reranker=None):
     """Compare any explicitly supplied dense/research configurations."""
-    return [evaluate_retrieval(cases, retriever, configuration) for configuration in configurations]
+    return [
+        evaluate_retrieval(cases, retriever, configuration, expander=expander, reranker=reranker)
+        for configuration in configurations
+    ]
