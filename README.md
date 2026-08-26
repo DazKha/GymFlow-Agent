@@ -27,9 +27,18 @@ source .venv/bin/activate
 python -m pip install -r requirements.txt
 ```
 
-Set the inference key in `.env`. Set `BACKEND_URL` to the running gym API; when
-the companion backend is checked out, start it from that backend directory with
-`uvicorn backend.main:app --reload`.
+Set `DIGITALOCEAN_INFERENCE_KEY` or `GRADIENT_MODEL_ACCESS_KEY` and
+`MODEL_NAME` for the agent. Set `LLM_MODEL` for policy answers. Start the
+tracked backend from the repository root:
+
+```bash
+cd backend
+python -m pip install -r backend/requirements.txt
+uvicorn backend.main:app --reload --port 8000
+```
+
+The backend creates `backend/gym.db` at runtime; that database is intentionally
+not tracked. The agent expects `BACKEND_URL=http://127.0.0.1:8000`.
 
 Start the agent with:
 
@@ -63,7 +72,7 @@ Install optional dependencies only when needed:
 ```bash
 python -m pip install -r requirements-research.txt
 python -m rag.research.benchmark --help
-python -m rag.evaluate_policy_rag --help
+python -m rag.evaluate_policy_rag --dataset rag/evaluation/policy_eval_set_v1.jsonl --config dense --top-k 5
 ```
 
 The research benchmark exposes `dense`, `reranker`, `multi_query`, and

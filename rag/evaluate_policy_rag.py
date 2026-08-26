@@ -12,7 +12,8 @@ from rag.research.retrieval_config import RetrievalConfig, experiment_configs
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Evaluate an explicit RAG retrieval configuration")
-    parser.add_argument("--dataset", required=True, help="Evaluation JSONL dataset")
+    parser.add_argument("--dataset", default="rag/evaluation/policy_eval_set_v1.jsonl",
+                        help="Evaluation JSONL dataset")
     parser.add_argument("--config", choices=[config.name for config in experiment_configs()], default="dense")
     parser.add_argument("--top-k", type=int, default=5)
     args = parser.parse_args()

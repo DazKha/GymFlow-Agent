@@ -1,0 +1,450 @@
+{
+  "metadata": {
+    "dataset_name": "California Fitness & Yoga public catalog snapshot",
+    "crawled_at": "2026-08-08T15:52:00+07:00",
+    "language": "vi-VN",
+    "currency": "VND",
+    "provenance_policy": "Only facts visible on official public pages are normalized. Missing values remain null and must not be inferred.",
+    "known_limitations": [
+      "No verified per-club machine inventory was published.",
+      "No equipment brands or quantities were published.",
+      "No fixed monthly PT-session or spa-discount quota was published for DUES plans.",
+      "The one-guest privilege frequency for Diamond was not stated.",
+      "The club map exposes public labels, but only one detailed club record was present in the crawled page text."
+    ]
+  },
+  "sources": [
+    {
+      "id": "SRC_DUES",
+      "url": "https://fit.cali.vn/dues/",
+      "document_type": "membership_catalog_and_faq",
+      "facts_used": [
+        "plan names",
+        "30-day prices",
+        "access scopes",
+        "towel service",
+        "Centuryon access",
+        "one-guest privilege",
+        "recurring payment",
+        "minimum commitment",
+        "unlimited check-in",
+        "common membership benefits"
+      ]
+    },
+    {
+      "id": "SRC_HOME",
+      "url": "https://fit.cali.vn/",
+      "document_type": "services_and_facilities",
+      "facts_used": [
+        "cardio and gym areas",
+        "Yoga",
+        "GroupX",
+        "Kickfit",
+        "Dance",
+        "locker area",
+        "sauna or steam room",
+        "member lounge",
+        "make-up area",
+        "restroom and shower facilities"
+      ]
+    },
+    {
+      "id": "SRC_MAP",
+      "url": "https://fit.cali.vn/map/",
+      "document_type": "club_directory",
+      "facts_used": [
+        "public city labels",
+        "public club labels",
+        "Centuryon District 1 address",
+        "Centuryon District 1 opening hours"
+      ]
+    },
+    {
+      "id": "SRC_TERMS",
+      "url": "https://fit.cali.vn/dieu-khoan-va-dieu-kien/",
+      "document_type": "general_terms",
+      "facts_used": [
+        "official terms page provenance only"
+      ]
+    }
+  ],
+  "membership_terms": {
+    "billing_type": "recurring_30_days",
+    "billing_cycle_days": 30,
+    "minimum_commitment_cycles": 12,
+    "payment_method": "credit_card_via_electronic_payment_gateway",
+    "checkin_policy": "unlimited_within_the_clubs_allowed_by_the_tier",
+    "annual_plan_benefit_equivalence_claimed": true,
+    "source_id": "SRC_DUES"
+  },
+  "benefits": [
+    {
+      "code": "UNLIMITED_CHECKIN",
+      "name": "Unlimited check-in",
+      "description": "No published daily check-in or training-time limit at clubs allowed by the membership tier.",
+      "source_id": "SRC_DUES"
+    },
+    {
+      "code": "ONE_CLUB_ACCESS",
+      "name": "One-club access",
+      "description": "Full-time access to one registered eligible club.",
+      "source_id": "SRC_DUES"
+    },
+    {
+      "code": "REGIONAL_CLUB_ACCESS",
+      "name": "Regional club access",
+      "description": "Full-time access to eligible California clubs within the registered region.",
+      "source_id": "SRC_DUES"
+    },
+    {
+      "code": "NATIONWIDE_CALI_ACCESS",
+      "name": "Nationwide California access",
+      "description": "Full-time access to California Fitness & Yoga clubs nationwide.",
+      "source_id": "SRC_DUES"
+    },
+    {
+      "code": "CENTURYON_ACCESS",
+      "name": "Centuryon access",
+      "description": "Access to California Centuryon clubs nationwide.",
+      "source_id": "SRC_DUES"
+    },
+    {
+      "code": "TOWEL_SERVICE",
+      "name": "Towel service",
+      "description": "Towel service included in the plan.",
+      "source_id": "SRC_DUES"
+    },
+    {
+      "code": "ONE_GUEST_PRIVILEGE",
+      "name": "One-guest privilege",
+      "description": "Privilege to bring one relative or friend. Frequency was not published.",
+      "source_id": "SRC_DUES"
+    },
+    {
+      "code": "YOGA_CLASSES",
+      "name": "Yoga classes",
+      "description": "Yoga offering advertised among common membership benefits.",
+      "source_id": "SRC_DUES"
+    },
+    {
+      "code": "GROUPX_CLASSES",
+      "name": "GroupX classes",
+      "description": "GroupX offering advertised among common membership benefits.",
+      "source_id": "SRC_DUES"
+    },
+    {
+      "code": "LIVWELL_REWARDS",
+      "name": "LivWell rewards",
+      "description": "Activity points and partner rewards through the LivWell app.",
+      "source_id": "SRC_DUES"
+    }
+  ],
+  "membership_plans": [
+    {
+      "code": "CALI_GOLD_ACTIVE",
+      "name": "Gold - Cali Active Truong Son",
+      "tier": "GOLD",
+      "price_vnd": 499000,
+      "billing_cycle_days": 30,
+      "minimum_commitment_cycles": 12,
+      "access_scope": "single_named_club",
+      "access_description": "Cali Active Truong Son club",
+      "is_marked_popular": false,
+      "benefit_codes": [
+        "UNLIMITED_CHECKIN",
+        "ONE_CLUB_ACCESS",
+        "YOGA_CLASSES",
+        "GROUPX_CLASSES",
+        "LIVWELL_REWARDS"
+      ],
+      "source_id": "SRC_DUES"
+    },
+    {
+      "code": "CALI_GOLD_REGIONAL",
+      "name": "Gold - Vung Tau or Can Tho",
+      "tier": "GOLD",
+      "price_vnd": 599000,
+      "billing_cycle_days": 30,
+      "minimum_commitment_cycles": 12,
+      "access_scope": "single_club_restricted_city",
+      "access_description": "One California club in Vung Tau or Can Tho",
+      "is_marked_popular": true,
+      "benefit_codes": [
+        "UNLIMITED_CHECKIN",
+        "ONE_CLUB_ACCESS",
+        "YOGA_CLASSES",
+        "GROUPX_CLASSES",
+        "LIVWELL_REWARDS"
+      ],
+      "source_id": "SRC_DUES"
+    },
+    {
+      "code": "CALI_GOLD_STANDARD",
+      "name": "Gold - Standard Club",
+      "tier": "GOLD",
+      "price_vnd": 799000,
+      "billing_cycle_days": 30,
+      "minimum_commitment_cycles": 12,
+      "access_scope": "single_selected_club",
+      "access_description": "One registered California Fitness & Yoga club",
+      "is_marked_popular": false,
+      "benefit_codes": [
+        "UNLIMITED_CHECKIN",
+        "ONE_CLUB_ACCESS",
+        "YOGA_CLASSES",
+        "GROUPX_CLASSES",
+        "LIVWELL_REWARDS"
+      ],
+      "source_id": "SRC_DUES"
+    },
+    {
+      "code": "CALI_PLATINUM",
+      "name": "Platinum Monthly",
+      "tier": "PLATINUM",
+      "price_vnd": 899000,
+      "billing_cycle_days": 30,
+      "minimum_commitment_cycles": 12,
+      "access_scope": "regional",
+      "access_description": "Eligible California clubs within the registered region",
+      "is_marked_popular": false,
+      "benefit_codes": [
+        "UNLIMITED_CHECKIN",
+        "REGIONAL_CLUB_ACCESS",
+        "YOGA_CLASSES",
+        "GROUPX_CLASSES",
+        "LIVWELL_REWARDS"
+      ],
+      "source_id": "SRC_DUES"
+    },
+    {
+      "code": "CALI_PREMIER",
+      "name": "Premier Monthly",
+      "tier": "PREMIER",
+      "price_vnd": 999000,
+      "billing_cycle_days": 30,
+      "minimum_commitment_cycles": 12,
+      "access_scope": "nationwide_california",
+      "access_description": "California Fitness & Yoga clubs nationwide",
+      "is_marked_popular": false,
+      "benefit_codes": [
+        "UNLIMITED_CHECKIN",
+        "NATIONWIDE_CALI_ACCESS",
+        "TOWEL_SERVICE",
+        "YOGA_CLASSES",
+        "GROUPX_CLASSES",
+        "LIVWELL_REWARDS"
+      ],
+      "source_id": "SRC_DUES"
+    },
+    {
+      "code": "CALI_DIAMOND",
+      "name": "Diamond Monthly",
+      "tier": "DIAMOND",
+      "price_vnd": 1299000,
+      "billing_cycle_days": 30,
+      "minimum_commitment_cycles": 12,
+      "access_scope": "nationwide_california_and_centuryon",
+      "access_description": "California Fitness & Yoga and Centuryon clubs nationwide",
+      "is_marked_popular": false,
+      "benefit_codes": [
+        "UNLIMITED_CHECKIN",
+        "NATIONWIDE_CALI_ACCESS",
+        "CENTURYON_ACCESS",
+        "TOWEL_SERVICE",
+        "ONE_GUEST_PRIVILEGE",
+        "YOGA_CLASSES",
+        "GROUPX_CLASSES",
+        "LIVWELL_REWARDS"
+      ],
+      "source_id": "SRC_DUES"
+    }
+  ],
+  "facility_types": [
+    {
+      "code": "CALI_CARDIO_AREA",
+      "name": "Cardio Area",
+      "category": "cardio",
+      "description": "Cardio training area with modern exercise equipment.",
+      "aliases": ["cardio", "khu cardio"],
+      "brand": null,
+      "quantity": null,
+      "per_club_availability": "not_published",
+      "source_id": "SRC_HOME"
+    },
+    {
+      "code": "CALI_STRENGTH_AREA",
+      "name": "Strength Training Area",
+      "category": "strength",
+      "description": "Professional gym floor with modern strength-training equipment.",
+      "aliases": ["gym floor", "khu tap ta", "strength area"],
+      "brand": null,
+      "quantity": null,
+      "per_club_availability": "not_published",
+      "source_id": "SRC_HOME"
+    },
+    {
+      "code": "CALI_YOGA_CLASSES",
+      "name": "Yoga Classes",
+      "category": "class",
+      "description": "Yoga classes from beginner to advanced levels.",
+      "aliases": ["yoga", "lop yoga"],
+      "brand": null,
+      "quantity": null,
+      "per_club_availability": "schedule_varies_by_club",
+      "source_id": "SRC_HOME"
+    },
+    {
+      "code": "CALI_GROUPX_CLASSES",
+      "name": "Cardio and GroupX Classes",
+      "category": "class",
+      "description": "Group classes focused on cardiovascular endurance and energy expenditure.",
+      "aliases": ["groupx", "group exercise", "lop nhom"],
+      "brand": null,
+      "quantity": null,
+      "per_club_availability": "schedule_varies_by_club",
+      "source_id": "SRC_HOME"
+    },
+    {
+      "code": "CALI_KICKFIT_CLASSES",
+      "name": "Kickfit Classes",
+      "category": "class",
+      "description": "Combat-inspired classes for strength, flexibility, and fitness.",
+      "aliases": ["kickfit", "martial arts"],
+      "brand": null,
+      "quantity": null,
+      "per_club_availability": "schedule_varies_by_club",
+      "source_id": "SRC_HOME"
+    },
+    {
+      "code": "CALI_DANCE_CLASSES",
+      "name": "Dance Classes",
+      "category": "class",
+      "description": "Dance offering including Zumba, Sexy Dance, Classical Dance, and BodyJam.",
+      "aliases": ["dance", "zumba", "bodyjam"],
+      "brand": null,
+      "quantity": null,
+      "per_club_availability": "schedule_varies_by_club",
+      "source_id": "SRC_HOME"
+    },
+    {
+      "code": "CALI_LOCKER_AREA",
+      "name": "Locker Area",
+      "category": "member_facility",
+      "description": "Spacious member locker area.",
+      "aliases": ["locker", "tu do"],
+      "brand": null,
+      "quantity": null,
+      "per_club_availability": "not_published",
+      "source_id": "SRC_HOME"
+    },
+    {
+      "code": "CALI_SAUNA_STEAM",
+      "name": "Sauna and Steam Room",
+      "category": "recovery",
+      "description": "Relaxation and recovery area with sauna or steam-room facilities.",
+      "aliases": ["sauna", "steam room", "phong xong hoi"],
+      "brand": null,
+      "quantity": null,
+      "per_club_availability": "not_published",
+      "source_id": "SRC_HOME"
+    },
+    {
+      "code": "CALI_LOUNGE",
+      "name": "Member Lounge",
+      "category": "member_facility",
+      "description": "Member lounge and relaxation area.",
+      "aliases": ["lounge", "khu thu gian"],
+      "brand": null,
+      "quantity": null,
+      "per_club_availability": "not_published",
+      "source_id": "SRC_HOME"
+    },
+    {
+      "code": "CALI_MAKEUP_AREA",
+      "name": "Make-up Area",
+      "category": "member_facility",
+      "description": "Dedicated member make-up area.",
+      "aliases": ["makeup area", "khu trang diem"],
+      "brand": null,
+      "quantity": null,
+      "per_club_availability": "not_published",
+      "source_id": "SRC_HOME"
+    },
+    {
+      "code": "CALI_RESTROOM_SHOWER",
+      "name": "Restroom and Shower Area",
+      "category": "member_facility",
+      "description": "Member restroom and shower facilities.",
+      "aliases": ["restroom", "shower", "phong tam"],
+      "brand": null,
+      "quantity": null,
+      "per_club_availability": "not_published",
+      "source_id": "SRC_HOME"
+    }
+  ],
+  "club_directory": {
+    "Ho Chi Minh City": [
+      "District 1 - Centuryon",
+      "District 1 - Active Cong Quynh",
+      "District 2 - Yoga Plus",
+      "District 2",
+      "District 3",
+      "District 4",
+      "District 5",
+      "District 6",
+      "District 7",
+      "District 11",
+      "Phu Nhuan District",
+      "Binh Thanh District - Pearl Plaza",
+      "Binh Thanh District - The Landmark81",
+      "Tan Binh District - Yoga Tan Binh",
+      "Tan Binh District - Active Truong Son",
+      "Go Vap District",
+      "Thu Duc District - Vincom Thu Duc",
+      "Thu Duc District - GigaMall",
+      "Binh Tan District",
+      "Tan Phu District"
+    ],
+    "Hanoi": [
+      "Ha Dong District",
+      "Hoan Kiem District - Capital Building",
+      "Hoan Kiem District - Hang Da Plaza",
+      "Dong Da District",
+      "Hai Ba Trung District",
+      "Long Bien District",
+      "Cau Giay District - Vincom Star City",
+      "Cau Giay District - Long Giang",
+      "Thanh Xuan District",
+      "Nam Tu Liem District",
+      "Tay Ho District"
+    ],
+    "Da Nang": ["Thanh Khe District"],
+    "Nha Trang": ["Nha Trang Center"],
+    "Bien Hoa": ["Pegasus Plaza"],
+    "Binh Duong": ["Binh Duong Square"],
+    "Can Tho": ["Ninh Kieu District"],
+    "Vung Tau": ["Lapen Centre"]
+  },
+  "verified_club_details": [
+    {
+      "name": "California Centuryon District 1",
+      "brand": "CENTURYON",
+      "city": "Ho Chi Minh City",
+      "district": "District 1",
+      "address": "Saigon Center, Floor 6, 65 Le Loi, Ben Nghe Ward, District 1, Ho Chi Minh City",
+      "opening_hours": [
+        {
+          "days": ["monday", "tuesday", "wednesday", "thursday", "friday"],
+          "opens": "06:00",
+          "closes": "22:00"
+        },
+        {
+          "days": ["saturday", "sunday"],
+          "opens": "08:00",
+          "closes": "22:00"
+        }
+      ],
+      "source_id": "SRC_MAP"
+    }
+  ]
+}

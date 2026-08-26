@@ -14,8 +14,8 @@ class EvaluationCase:
     @classmethod
     def from_mapping(cls, value: dict[str, Any]) -> "EvaluationCase":
         return cls(
-            query=str(value["query"]),
-            relevant_chunk_ids=tuple(value.get("relevant_chunk_ids", ())),
+            query=str(value["query"] if "query" in value else value["user_input"]),
+            relevant_chunk_ids=tuple(value.get("relevant_chunk_ids", value.get("reference_chunk_ids", ()))),
             reference_answer=str(value.get("reference_answer", "")),
             reference_contexts=tuple(value.get("reference_contexts", ())),
         )
