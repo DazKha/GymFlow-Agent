@@ -2,20 +2,19 @@
 __pycache__/
 *.py[cod]
 .langgraph_api/
-.env
+.env*
+!.env.example
 
 # Local databases and vector-store persistence
-*.db
-*.sqlite
-*.sqlite3
-**/chroma/
-**/chroma_db/
-**/*-db/
+data/**/*.db
+data/**/*.sqlite
+data/**/*.sqlite3
+data/policy-terms-db/
+data/generated/chroma/
 data/generated/
 
 # Experiment outputs and model caches
-**/runs/
-**/experiment_runs/
+rag/evaluation/runs/
 .cache/
 .huggingface/
 model_cache/
