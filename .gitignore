@@ -23,3 +23,6 @@ transformers_cache/
 
 # Notebook state
 .ipynb_checkpoints/
+
+# Agent workspace artifacts
+.superpowers/
