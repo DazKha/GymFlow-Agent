@@ -16,7 +16,6 @@ from tools import (
     search_packages,
     get_package_detail,
     compare_packages,
-    get_facilities,
     get_vietnam_now,
     create_booking,
 )
@@ -59,7 +58,6 @@ builder.add_node(
             search_packages,
             get_package_detail,
             compare_packages,
-            get_facilities,
             get_vietnam_now,
             create_booking,
             query_gym_policy,

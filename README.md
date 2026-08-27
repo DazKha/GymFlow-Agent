@@ -1,125 +1,124 @@
-# 🤖 Alex — FlexFit Gym Assistant
+# Alex, FlexFit Gym Assistant
 
-Alex is a virtual consulting assistant for **FlexFit Gym** — a demo fitness center with amenities including a swimming pool, sauna, group classes, personal training, and more. Alex helps customers in Vietnamese: finding the right membership package, answering questions about policies and terms, and guiding them through booking a trial session — always prioritizing sourced information (API, RAG) over hallucination.
+Alex is a Vietnamese LangGraph assistant for **FlexFit Gym**, a demo fitness
+center with a swimming pool, sauna, group classes, personal training, and more.
+It helps customers find membership packages, answer policy and terms questions,
+and book trial sessions while prioritizing sourced API and RAG information over
+hallucination.
 
-The project is built as a **multi-task agent on LangGraph**, with the graph split by intent (consult / policy / booking) and tools that interact with an HTTP backend and an internal document store.
+## Architecture
 
----
+The graph routes consult, policy, and booking requests to the appropriate tools:
 
-## 🔄 Flow Overview
-
-```
-User Message
-     ↓
-  Router ── classifies intent: consult | policy | booking
-     ↓                        (with conversation context +
-     ├── Consult              booking state when needed)
-     │     └── packages, pricing, amenities
-     │         tools: search_packages, get_package_detail,
-     │                compare_packages, get_facilities
-     │
-     ├── Policy
-     │     └── terms, refunds, rules, cameras, etc.
-     │         tools: query_gym_policy (RAG)
-     │
-     └── Booking
-           └── collect info → confirm → create
-               tools: create_booking, get_vietnam_now
-                         ↓
-                      ToolNode
-               (executes tool, returns result
-                to the matching intent agent)
+```text
+User message -> agent graph -> consult | policy | booking
+                              policy -> tools/query_gym_policy
+                                      -> rag.core.pipeline
+                                      -> dense E5 retriever -> Chroma
 ```
 
----
+The agent imports only `rag.core` during normal startup. `rag.research` contains
+optional benchmark variants, while `rag.evaluation` contains deterministic
+metrics and opt-in Ragas validation. Query expansion, reciprocal-rank fusion,
+cross-encoder reranking, benchmark runs, and Ragas are not part of the normal
+runtime. The production policy path is dense cosine search only, and a clean
+runtime install does not import Ragas.
 
-## 🛠️ Tools
+## Tools And Backend
 
-Registered in the graph (see `agent/graph.py`):
+The graph supports membership and facility lookup, package comparison, policy
+retrieval, current Vietnam time, and trial booking. HTTP tools use
+`BACKEND_URL` or `BASE_URL`, defaulting to `http://127.0.0.1:8000`.
 
-| Tool | Purpose |
-|---|---|
-| `search_packages` | Search membership packages by filter (description, budget, needs) |
-| `get_package_detail` | Full detail of one package (price, commitment, amenities, etc.) |
-| `compare_packages` | Fetch data for multiple packages for side-by-side comparison |
-| `get_facilities` | Equipment / zones by type |
-| `get_vietnam_now` | Current timestamp in `Asia/Ho_Chi_Minh` (supports "tomorrow", "tonight", etc.) |
-| `create_booking` | Create a trial booking via API (`POST /bookings`) |
-| `query_gym_policy` | Retrieve policy / terms from RAG (Chroma + embedding + pipeline in `rag/policy_pipeline.py`) |
+## Setup
 
-> The `tools/` package also exports additional tools (e.g. `get_booking`, `get_slots`) — available for extension, not attached to the default ToolNode.
-
-**HTTP backend** — configured via `BACKEND_URL` / `BASE_URL` (default `http://127.0.0.1:8000`), see `tools/client.py`.
-
----
-
-## ⚙️ Tech Stack
-
-| Layer | Technology |
-|---|---|
-| **Agent graph** | LangGraph — state graph, ToolNode, tools_condition, compiled as `gym_agent` (`langgraph.json`) |
-| **LLM** | ChatGradient (`langchain-gradient`) — e.g. `openai-gpt-4o`, keyed via `DIGITALOCEAN_INFERENCE_KEY` / `GRADIENT_MODEL_ACCESS_KEY` |
-| **Chains / tools** | LangChain Core — messages, tool definitions, `bind_tools` |
-| **RAG (policy)** | `langchain-community` (Chroma), `langchain-huggingface` (embeddings), `chromadb`, `sentence-transformers` (cross-encoder for optional reranking), `torch` — vector store at `data/policy-terms-db` (built from `rag/build_db.ipynb`) |
-| **Config** | Pydantic · python-dotenv |
-| **HTTP** | `requests` → gym mock / real API |
-
----
-
-## 🚀 Quick Start
-
-**1. Environment**
 ```bash
 cp .env.example .env
-# fill in inference key and optionally BACKEND_URL
+python -m venv .venv
+source .venv/bin/activate
+python -m pip install -r requirements.txt
 ```
 
-**2. Install dependencies**
+Set `DIGITALOCEAN_INFERENCE_KEY` or `GRADIENT_MODEL_ACCESS_KEY` and `MODEL_NAME`
+for the agent. Set `LLM_MODEL` for policy answers. Start the tracked backend
+from the repository root:
+
 ```bash
-pip install -r requirements.txt
+cd backend
+python -m pip install -r backend/requirements.txt
+uvicorn backend.main:app --reload --port 8000
 ```
 
-**3. Build RAG vector store** (first time only)
+The backend creates `backend/gym.db` at runtime; that database is intentionally
+not tracked. The agent expects `BACKEND_URL=http://127.0.0.1:8000`.
+
+Start the agent with:
+
 ```bash
-# open and run rag/build_db.ipynb
-# relevant env vars: GYM_POLICY_CHROMA_DIR, GYM_POLICY_SKIP_RERANK, ...
-# see rag/policy_pipeline.py for full list
+langgraph dev
 ```
 
-**4. Run with LangGraph Studio / CLI**
+## Policy Index
+
+Canonical Markdown sources live in `data/policies/`. This workflow uses only
+repository-relative paths and keeps generated output ignored:
+
 ```bash
-langgraph dev   # graph export: agent.graph:graph
+python scripts/normalize_policies.py
+python scripts/validate_policies.py
+python -m rag.core.chunking --input-dir data/policies \
+  --output data/generated/policy_chunks.jsonl \
+  --report data/generated/policy_chunk_report.json
+python -m rag.core.ingest --input data/generated/policy_chunks.jsonl --dry-run
+python -m rag.core.ingest --input data/generated/policy_chunks.jsonl \
+  --persist-dir data/generated/chroma --recreate-collection --sync
 ```
 
----
+The production index uses multilingual E5 embeddings and dense cosine search
+only. Rebuild chunks and the index whenever a policy source changes.
 
-## 📁 Project Structure
+## Research And Evaluation
 
-```
-agent/
-├── graph.py          # LangGraph graph definition + ToolNode wiring
-├── state.py          # Shared agent state schema
-├── nodes/
-│   ├── router.py     # Intent classifier
-│   ├── consult.py    # Membership consultation agent
-│   ├── policy.py     # Policy Q&A agent
-│   └── booking.py    # Booking flow agent
-└── prompts/          # System prompts per node
+The evaluation dataset is `rag/evaluation/policy_eval_set_v1.jsonl`. Install
+optional dependencies only when needed:
 
-tools/
-├── client.py         # HTTP client (BACKEND_URL config)
-└── definitions.py    # @tool decorated functions
-
-rag/
-├── policy_pipeline.py  # Chroma retrieval + optional reranking
-├── build_db.ipynb      # Build / rebuild vector store
-└── test_rag.ipynb      # RAG evaluation notebook
-
-data/
-├── policy-terms-db/    # Chroma vector store (may be .gitignored)
-└── documents/          # Raw policy / terms source files
+```bash
+python -m pip install -r requirements-research.txt
+python -m rag.research.benchmark --help
+python -m rag.evaluate_policy_rag \
+  --dataset rag/evaluation/policy_eval_set_v1.jsonl --config dense --top-k 5
 ```
 
----
+The research benchmark exposes `dense`, `reranker`, `multi_query`, and
+`combined` configurations. Ragas is intentionally selective: validate only the
+result files you choose, normally the dense baseline and the best configuration.
 
-> **Note:** FlexFit Gym and "Alex" in this repo are a demo/project context. Adjust branding or API endpoints to match your production environment before deploying outside of testing.
+```bash
+python -m rag.evaluation.ragas_validation --list
+python -m rag.evaluation.ragas_validation \
+  --result-path path/to/dense.jsonl \
+  --result-path path/to/combined.jsonl
+```
+
+Ragas is imported lazily only by its execution path; listing or selecting files
+does not require it.
+
+## Checks
+
+```bash
+python -m pytest -q
+python -m pytest -q rag/core/tests rag/research/tests rag/evaluation/tests -m "not real_model"
+python scripts/normalize_policies.py --help
+python scripts/validate_policies.py --help
+python -m rag.core.chunking --help
+python -m rag.core.ingest --help
+python -m rag.research.benchmark --help
+python -m rag.evaluation.ragas_validation --help
+```
+
+The default tests are offline and do not download models or call external
+services. See `docs/rag/` for policy preparation notes and `docs/evaluation/`
+for benchmark and Ragas details.
+
+FlexFit Gym and Alex are demo/project branding. Adjust branding or API
+endpoints before deploying outside testing.

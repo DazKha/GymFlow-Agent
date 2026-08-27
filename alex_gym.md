@@ -59,12 +59,14 @@ gym-agent/
 │   ├── create_booking.py     # Tạo booking
 │   └── ...
 ├── rag/               # RAG pipeline
-│   ├── policy_pipeline.py   # Pipeline tra cứu policy
-│   ├── build_db.ipynb      # Build vector store
-│   └── test_rag.ipynb      # Test RAG
-├── data/              # Data và vector store
-│   ├── gym-policy-terms.md # Tài liệu policy gốc
-│   └── policy-terms-db/    # Chroma vector store
+│   ├── core/           # Dense production RAG
+│   │   ├── pipeline.py
+│   │   ├── chunking.py
+│   │   └── ingest.py
+│   ├── research/       # Optional retrieval variants
+│   └── evaluation/     # Metrics, dataset, and Ragas validation
+├── data/policies/      # Canonical policy Markdown sources
+├── backend/            # FastAPI mock backend and catalog
 ├── README.md          # Tài liệu chính
 └── alex_gym.md        # File này
 ```
@@ -113,22 +115,21 @@ class AgentState(TypedDict, total=False):
 
 ## 6. RAG Pipeline
 
-**Location**: `rag/policy_pipeline.py`
+**Location**: `rag/core/pipeline.py`
 
 **Flow**:
 ```
-Query → (Expand) → Retrieve → (Rerank) → Answer
+Query → Dense Retrieve → Answer
 ```
 
-- **Expand**: Mở rộng query bằng LLM (tắt mặc định qua `EXPAND_N=0`)
-- **Retrieve**: Chroma similarity search, top-k = 4
-- **Rerank**: Cross-encoder (tắt mặc định qua `SKIP_RERANK=1`)
+- **Retrieve**: Dense E5 + Chroma similarity search
+- **Research**: expansion, fusion, and reranking are opt-in benchmark variants
 - **Answer**: LLM sinh câu trả lời dựa trên context
 
 **Cấu hình qua env**:
-- `GYM_POLICY_CHROMA_DIR` — thư mục vector store
-- `GYM_POLICY_SKIP_RERANK` — bỏ qua rerank
-- `GYM_POLICY_EXPAND_N` — số query mở rộng
+- `CHROMA_PERSIST_DIR` — thư mục vector store
+- `CHROMA_POLICY_COLLECTION` — tên collection
+- `POLICY_RETRIEVAL_TOP_K` — số kết quả dense
 
 ---
 
@@ -150,19 +151,26 @@ Query → (Expand) → Retrieve → (Rerank) → Answer
 
 ### Required env vars:
 ```bash
-# LLM
+# Agent and policy LLM credentials
 DIGITALOCEAN_INFERENCE_KEY=...  # hoặc GRADIENT_MODEL_ACCESS_KEY
+MODEL_NAME=openai-gpt-4o
+LLM_MODEL=openai-gpt-4o-mini
 
 # Backend (mock)
 BACKEND_URL=http://127.0.0.1:8000
 
 # RAG (tùy chọn)
-GYM_POLICY_CHROMA_DIR=data/policy-terms-db
+CHROMA_PERSIST_DIR=data/generated/chroma
 ```
 
 ### Build RAG:
 ```bash
-jupyter lab rag/build_db.ipynb
+python scripts/normalize_policies.py
+python scripts/validate_policies.py
+python -m rag.core.chunking --input-dir data/policies \\
+  --output data/generated/policy_chunks.jsonl \\
+  --report data/generated/policy_chunk_report.json
+python -m rag.core.ingest --input data/generated/policy_chunks.jsonl --dry-run
 ```
 
 ### Chạy agent:
@@ -176,7 +184,7 @@ langgraph dev  # hoặc chạy trực tiếp qua code
 
 1. **Thêm tool**: Định nghĩa trong `tools/` và import vào `graph.py`
 2. **Thêm intent**: Cập nhật `Intent` type trong `state.py` và `router_node`
-3. **Cập nhật policy RAG**: Thêm document vào `data/gym-policy-terms.md` và rebuild
+3. **Cập nhật policy RAG**: Thêm document vào `data/policies/`, validate và rebuild theo `docs/rag/policy-preparation.md`
 4. **Mock backend**: Cấu hình `BACKEND_URL` trỏ tới server phù hợp
 
 ---

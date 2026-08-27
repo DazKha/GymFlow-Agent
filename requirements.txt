@@ -2,9 +2,12 @@ langchain-core
 langchain-openai
 langchain-gradient
 langgraph
+langgraph-cli
 pydantic
 python-dotenv
 requests
+PyYAML
+tiktoken
 # Policy RAG (query_gym_policy)
 langchain-community
 langchain-huggingface

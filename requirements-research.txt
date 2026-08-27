@@ -1,0 +1,2 @@
+# Optional retrieval benchmarks and Ragas validation.
+ragas
