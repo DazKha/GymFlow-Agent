@@ -251,6 +251,14 @@ Re-run normalization, validation, chunking, and ingestion whenever a policy
 source changes. The corpus is section-aware and preserves document, section,
 clause, source, and effective-date metadata for citations.
 
+### Policy Chunking
+
+Policy Markdown files are split by heading and clause boundaries before
+embedding. Chunks keep their document and section hierarchy, clause IDs, source
+URL, and effective date, so retrieval can return concise context with traceable
+citations. The chunker writes JSONL plus a validation report to
+`data/generated/`; these generated files are reproducible and ignored by Git.
+
 ### 5. Start LangGraph
 
 From the repository root:
